@@ -19,10 +19,11 @@ jobs:
       - name: Refresh keyring and install tooling
         run: |
           pacman -Syu --noconfirm --needed archlinux-keyring
-          pacman -S --noconfirm --needed git libarchive
+          pacman -S --noconfirm --needed git libarchive \
+            gtk3 nss alsa-lib libsecret libnotify at-spi2-core xdg-utils
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Prepare unprivileged build user
         run: |
