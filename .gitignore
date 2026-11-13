@@ -1,0 +1,8 @@
+# makepkg build artifacts
+pkg/
+src/
+*.pkg.tar.*
+
+# pre-downloaded sources (fetched by makepkg from the upstream release URLs)
+PiChamber-*.deb
+pichamber-license

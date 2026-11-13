@@ -1,0 +1,22 @@
+# Arch has no update-alternatives and pacman hooks already refresh the
+# desktop/icon/MIME caches, so the only thing left to do is make sure the
+# Chromium sandbox helper has usable permissions.
+
+_sandbox_permissions() {
+	if [[ -L /proc/self/ns/user ]] && unshare --user true 2>/dev/null; then
+		# Unprivileged user namespaces work: the sandbox helper must not be SUID.
+		chmod 0755 /opt/PiChamber/chrome-sandbox
+	else
+		# Fall back to the setuid sandbox on kernels/hardened setups
+		# without unprivileged user namespaces.
+		chmod 4755 /opt/PiChamber/chrome-sandbox
+	fi
+}
+
+post_install() {
+	_sandbox_permissions
+}
+
+post_upgrade() {
+	_sandbox_permissions
+}
