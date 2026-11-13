@@ -1,0 +1,59 @@
+name: build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  x86_64:
+    name: pichamber-bin (x86_64)
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+
+    steps:
+      - name: Refresh keyring and install tooling
+        run: |
+          pacman -Syu --noconfirm --needed archlinux-keyring
+          pacman -S --noconfirm --needed git libarchive
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare unprivileged build user
+        run: |
+          useradd -m builder
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+
+      - name: Verify .SRCINFO matches PKGBUILD
+        run: |
+          su builder -c 'makepkg --printsrcinfo' > /tmp/SRCINFO.generated
+          diff -u .SRCINFO /tmp/SRCINFO.generated
+
+      - name: Build package
+        run: su builder -c 'makepkg --noconfirm --cleanbuild --clean'
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pichamber-bin-x86_64
+          path: '*.pkg.tar.zst'
+          if-no-files-found: error
+          compression-level: 0
+
+      - name: Attach package to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: '*.pkg.tar.zst'
+          fail_on_unmatched_files: true
+          overwrite_files: true
+          generate_release_notes: true
+
+# aarch64 is intentionally not built here: the PKGBUILD supports it
+# (source_aarch64/sha256sums_aarch64), but GitHub's hosted runners would need an
+# Arch ARM rootfs or QEMU. Build it natively with `makepkg -si` on an ARM machine.
